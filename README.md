@@ -61,12 +61,13 @@ network)
 - cross validation with train and test set
 ### Condition Classification
 - Input: train/test split preprocessed gene expression data
-- Methods: Logistic regression, Tree ensembles, Neural networks
+- Methods: Logistic regression (Antonia), Tree ensembles (Deniz), Neural networks (Thaddl)
 - Output: predicted treatment condition, evaluation metrics, feature importance (driver genes compare paper)
 ### Clustering
-- Input: dimension reduced data
-- Methods:K-means, leiden, Hierarchical
+- Input: dimension reduced data of log fold change
+- Methods:K-means (Deniz), leiden (Antonia), lauvain, Hierarchical (Thaddl)
 - Output: UMAP, t-SNE, cluster assignments, classification metrics (sensitivity, specificity...), comparison to paper pathways
+- gene ontology feature sets
 ### Perturbation Prediction
 - Input (Features): train/test split of subset of 50 perturbations represented as: [One-Hot Condition] + [One-Hot Perturbation] or [Average MOFA Embedding of the Unperturbed Cells in Condition Y] + [One-Hot Perturbation]
 - Do we train the model on all conditions or train one model per condition?
