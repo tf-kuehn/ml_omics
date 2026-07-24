@@ -97,7 +97,7 @@ save_figure("qc_violin_post_filtering3.png")
 
 data_shape.loc['post_filtering3'] = adata.shape[0], adata.shape[1]
 
-adata.write(f"{data_dir}/adata_qc.h5ad")
+adata.write(f"{data_dir}/adata_post_filtering.h5ad")
 
 # doublet detection
 # split per batch into new objects.

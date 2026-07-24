@@ -1,0 +1,6 @@
+,cells,genes
+pre_filtering,218331,23712
+post_filtering1,216508,23711
+post_filtering2,215364,23711
+post_filtering3,215364,23711
+post_doublet_removal,190134,23711
