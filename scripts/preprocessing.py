@@ -155,7 +155,10 @@ data_shape.loc["post_doublet_removal"] = adata.shape[0], adata.shape[1]
 
 adata.write(f"{data_dir}/adata_qc_done.h5ad")
 
-
+# Remove perturbations with less than 5 cells
+perturbation_counts = adata.obs['perturbation'].value_counts()
+valid_perturbations = perturbation_counts[perturbation_counts >= 5].index
+adata = adata[adata.obs['perturbation'].isin(valid_perturbations)].copy()
 
 # Save the counts in a separate layer
 adata.layers["counts"] = adata.X.copy()
