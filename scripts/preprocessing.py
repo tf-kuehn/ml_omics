@@ -155,10 +155,17 @@ data_shape.loc["post_doublet_removal"] = adata.shape[0], adata.shape[1]
 
 adata.write(f"{data_dir}/adata_qc_done.h5ad")
 
-# Remove perturbations with less than 5 cells
-perturbation_counts = adata.obs['perturbation'].value_counts()
-valid_perturbations = perturbation_counts[perturbation_counts >= 5].index
-adata = adata[adata.obs['perturbation'].isin(valid_perturbations)].copy()
+# Remove perturbations with less than 15 cells
+cell_counts = adata.obs.groupby(["condition", "perturbation"]).size()
+# find pertubations which have at least 15 cells in each condition
+min_cells_per_cond = cell_counts.unstack(level="condition", fill_value=0)
+valid_perts = min_cells_per_cond[(min_cells_per_cond >= 15).all(axis=1)].index.tolist()
+# always keep 'control'
+if "control" not in valid_perts:
+    valid_perts.append("control")
+# filter adata on these conditions
+adata = adata[adata.obs["perturbation"].isin(valid_perts)].copy()
+print(f"remaining Perturbationen with >= 15 cells: {len(valid_perts)}")
 
 # Save the counts in a separate layer
 adata.layers["counts"] = adata.X.copy()
