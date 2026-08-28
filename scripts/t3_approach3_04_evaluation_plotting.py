@@ -7,6 +7,49 @@ from sklearn.metrics import mean_squared_error
 from scipy.stats import pearsonr
 import os
 
+def add_custom_errorbars(g, df, metric):
+    """
+    Adds custom asymmetric error bars to a seaborn catplot by computing the exact x-axis offset for each grouped bar.
+    """
+    strategies = df['Strategy'].unique()
+    models = df['Model'].unique()
+    
+    n_models = len(models)
+    
+    # Seaborn allocates a total width of 0.8 per group by default
+    width = 0.8 / n_models
+    offsets = np.linspace(-0.4 + width/2, 0.4 - width/2, n_models)
+    
+    for ax in g.axes.flat:
+        title = ax.get_title()
+        if not title:
+            continue
+            
+        # Extract condition name from the facet title (e.g., 'Condition: Control' -> 'Control')
+        cond_name = title.split(': ')[-1]
+        cond_df = df[df['Condition'] == cond_name]
+        
+        for s_idx, strategy in enumerate(strategies):
+            for m_idx, model in enumerate(models):
+                row = cond_df[(cond_df['Strategy'] == strategy) & (cond_df['Model'] == model)]
+                if not row.empty:
+                    val = row[metric].values[0]
+                    low = row[f"{metric}_CI_Lower"].values[0]
+                    high = row[f"{metric}_CI_Upper"].values[0]
+                    
+                    lower_err = max(0.0, val - low)
+                    upper_err = max(0.0, high - val)
+                    
+                    x_pos = s_idx + offsets[m_idx]
+                    
+                    # Draw the Fehlerbalken
+                    ax.errorbar(
+                        x_pos, val, 
+                        yerr=[[lower_err], [upper_err]], 
+                        fmt='none', color='black', capsize=3, 
+                        linewidth=1.2, zorder=5
+                    )
+
 def main():
     os.makedirs("../results", exist_ok=True)
     
@@ -99,11 +142,14 @@ def main():
         height=5,
         aspect=1.2,
     )
+    
     g1.set_axis_labels('Selection Strategy', 'Mean Pearson Correlation (r)')
     g1.set_titles(col_template='Condition: {col_name}')
     g1.set_xticklabels(rotation=45, ha='right')
     g1.fig.subplots_adjust(top=0.8)
     g1.fig.suptitle('Perturbation Prediction: Pearson Correlation by Condition')
+    # Add custom error bars for Pearson_r
+    add_custom_errorbars(g1, df_results, 'Pearson_r')
     plt.savefig("../results/task3_pearson_strategies_plot.png", bbox_inches='tight')
     plt.show()
 
@@ -119,11 +165,16 @@ def main():
         height=5,
         aspect=1.2,
     )
+    
+    # Add custom error bars for MSE
+    add_custom_errorbars(g2, df_results, 'MSE')
+    
     g2.set_axis_labels('Selection Strategy', 'Mean Squared Error (MSE)')
     g2.set_titles(col_template='Condition: {col_name}')
     g2.set_xticklabels(rotation=45, ha='right')
     g2.fig.subplots_adjust(top=0.8)
     g2.fig.suptitle('Perturbation Prediction: MSE by Condition')
+    add_custom_errorbars(g2, df_results, 'MSE')
     plt.savefig("../results/task3_mse_strategies_plot.png", bbox_inches='tight')
     plt.show()
     

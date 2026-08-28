@@ -12,7 +12,6 @@ The dataset contains melanoma cells measured under three experimental conditions
 - **IFNγ** — cells treated with interferon gamma
 - **Co-culture** — cells co-cultured with tumor-infiltrating lymphocytes for 48 hours
 
-> The original dataset and detailed experimental procedures are described by Frangieh et al. (2021).
 
 ## Project Tasks
 
@@ -22,9 +21,9 @@ The dataset contains melanoma cells measured under three experimental conditions
 
 The project compares several machine-learning approaches, including:
 
-- Logistic regression
-- Random forest
-- Multilayer perceptron
+- Logistic regression `t1_logistic_regression.ipynb`
+- Random forest `t1_RF.ipynb`
+- Neural Networks / Multilayer perceptron `t1_RF.ipynb`
 
 The results include:
 
@@ -33,19 +32,16 @@ The results include:
 - Feature importance
 - Candidate driver genes for each condition
 
+
 ### 2. Clustering
 
 **Objective:** Identify cellular structure and compare clustering methods.
 
-The clustering workflow includes:
+The following clustering methods are includes:
 
-- Quality-controlled and normalized expression data
-- Dimension reduction
-- K-means clustering
-- Leiden clustering
-- Hierarchical clustering
-- Visualization using UMAP and t-SNE
-- Comparison with biological findings reported in the original publication
+- K-means clustering `t2_k-means.ipynb`
+- Leiden clustering `t2_leiden.ipynb`
+- Hierarchical clustering `t2_hierachical.ipynb`
 
 ### 3. Perturbation Prediction
 
@@ -53,15 +49,7 @@ The clustering workflow includes:
 
 The prediction target is the mean log fold change associated with a perturbation under a given condition.
 
-The project investigates:
 
-- Baseline and regularized regression models
-- Random forest models
-- Multiple feature-engineering strategies
-- Different perturbation-selection and data-splitting strategies
-- Prediction uncertainty
-- Bias–variance trade-offs
-- Potential integration of protein measurements using MOFA
 
 ## Analysis Pipeline
 
