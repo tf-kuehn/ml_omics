@@ -51,9 +51,18 @@ The prediction target is the mean log fold change associated with a perturbation
 
 **Scripts**
 3 Apporaches by 3 people:
-1. `t3_approach1.ipynb`
-2. `t3_approach2.ipynb`
-3. `t3_approach3_01_feature_engineering.py, t3_approach3_02_experimental_design_split.py, t3_approach3_03_model_training.py, t3_approach3_04_evaluation_plotting.py`
+1. Naïve Scalar Feature Strategy
+    - This approach uses a deliberately simplistic feature engineering strategy to establish a lower-bound baseline. It represents the target genetic perturbation using only its scalar basal expression value in the control state, concatenated with a one-hot encoded vector for the experimental condition. 
+    - Script: `t3_approach1.ipynb`
+
+2. Pathway-Informed & Baseline PCA Strategy
+    - This approach introduces rich biological priors to help the models generalize to unseen knockouts. The feature matrix is expanded to include a binary, multi-hot vector mapping the target gene to MSigDB Hallmark pathways. Furthermore, it incorporates 50 Principal Components representing the global transcriptomic state of the unperturbed control cells to give the models dense context about the starting cellular environment. It tests these features using grouped cross-validation. Script: 
+    - `t3_approach2.ipynb`
+
+3. Modular Hybrid Pipeline with Bootstrap Evaluation
+    - For feature engineering, this approach creates a hybrid input by concatenating the scalar basal KO expression, the one-hot conditions, and the Hallmark pathway mappings. It expands the predictive suite to include Lasso and K-Nearest Neighbors (KNN) models. It evaluates model uncertainty by using 30 bootstrap resampling iterations to calculate 95% confidence intervals for both Mean Squared Error and Pearson correlation.
+    - Scripts:
+    - `t3_approach3_01_feature_engineering.py, t3_approach3_02_experimental_design_split.py, t3_approach3_03_model_training.py, t3_approach3_04_evaluation_plotting.py`
 
 ## Analysis Pipeline
 
