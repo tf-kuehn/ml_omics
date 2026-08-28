@@ -7,11 +7,15 @@ import pickle
 import os
 
 def main():
+    """
+    Prepares perturbation target splits for Task 3. Generates five distinct 50-perturbation subsets (40 train / 10 test) to evaluate how selection bias impacts model generalization.
+    """
     os.makedirs("../processed_data", exist_ok=True)
     
     print("Loading engineered features and raw data...")
     adata_lfc = sc.read_h5ad('../processed_data/task3_lfc_features.h5ad')
     
+    # Try loading raw counts to determine perturbation frequency, fallback to LFC matrix if missing
     try:
         adata_pre = sc.read_h5ad('../data/frangieh/adata_preprocessed.h5ad')
         has_pre = True
@@ -19,6 +23,8 @@ def main():
         print("Warning: adata_preprocessed.h5ad not found. Falling back to LFC counts.")
         has_pre = False
 
+    # Exclude unperturbed control cells from target candidates
+    # Select the knockouts with the highest representation/cell counts in the dataset
     eligible_genes = [g for g in adata_lfc.obs["perturbation"].unique() if str(g).lower() != 'control']
     all_strategies = {}
 
@@ -32,22 +38,28 @@ def main():
     all_strategies['essentiality'] = top50_perts
 
     print("--- Strategy B: Random (50 Random) ---")
+    # Pure random selection to establish a baseline and test for selection bias
     np.random.seed(42)
     all_perts = pert_counts.index.tolist()
     random50_perts = list(np.random.choice(all_perts, size=50, replace=False))
     all_strategies['random'] = random50_perts
 
     print("--- Strategy C: Highest LFC ---")
+    # Select knockouts that cause the highest global transcriptomic shifts
     df_lfc_all = adata_lfc.to_df()
     df_lfc_all['perturbation'] = adata_lfc.obs['perturbation'].values
+    # Calculate the mean absolute LFC across all genes for each perturbation
     df_lfc_all['mean_abs_lfc'] = df_lfc_all.drop(columns='perturbation').abs().mean(axis=1)
     pert_strength = df_lfc_all.groupby('perturbation')['mean_abs_lfc'].max()
     top_lfc50_perts = pert_strength.sort_values(ascending=False).head(50).index.tolist()
     all_strategies['highest_lfc'] = top_lfc50_perts
 
     print("--- Strategy D: Leiden Clusters ---")
+    # Stratified sampling across functional clusters to ensure diverse biological representation
     conds = ['Control', 'IFNγ', 'Co-culture']
     dfs = []
+
+    # Concatenate LFC profiles across all conditions to cluster based on the complete multi-condition response
     for cond in conds:
         mask = adata_lfc.obs['condition'] == cond
         sub_df = adata_lfc[mask].to_df()
@@ -68,6 +80,7 @@ def main():
     np.random.seed(42)
     cluster_series = adata_perts_combined.obs['leiden']
     n_clusters = cluster_series.nunique()
+    # Dynamically scale the per-cluster target to hit ~50 total samples
     samples_per_cluster = int(np.ceil(50 / n_clusters))
     
     cluster50_perts = []
@@ -76,7 +89,8 @@ def main():
         n_sample = min(samples_per_cluster, len(cluster_perts))
         chosen = np.random.choice(cluster_perts, size=n_sample, replace=False).tolist()
         cluster50_perts.extend(chosen)
-        
+
+    # Correct for rounding overflows/underflows to guarantee exactly 50 targets
     if len(cluster50_perts) > 50:
         cluster50_perts = np.random.choice(cluster50_perts, size=50, replace=False).tolist()
     elif len(cluster50_perts) < 50:
@@ -86,9 +100,11 @@ def main():
     all_strategies['leiden_clusters'] = cluster50_perts
 
     print("--- Strategy E: Hallmark Pathways ---")
+    # Greedy algorithm to maximize representation of distinct MSigDB biological pathways
     hallmark = gp.get_library(name="MSigDB_Hallmark_2020", organism="Human")
     hallmark_upper = {pathway: {str(g).upper() for g in genes} for pathway, genes in hallmark.items()}
     
+    # Construct a binary perturbation-by-pathway matrix
     pathway_matrix = pd.DataFrame(0, index=eligible_genes, columns=hallmark_upper.keys(), dtype=int)
     for gene in eligible_genes:
         g_up = str(gene).upper()
@@ -103,6 +119,7 @@ def main():
     covered_pathways = set()
     remaining = annotated_genes.copy()
     
+    # Iteratively select the gene that introduces the maximum number of novel/unseen pathways
     while len(pathway50_perts) < 50 and len(remaining) > 0:
         gains = {}
         for gene in remaining:
@@ -112,7 +129,7 @@ def main():
             
         max_gain = max(gains.values())
         if max_gain == 0:
-            break
+            break # Stop early if pathway coverage is fully saturated
             
         best_genes = [g for g, gain in gains.items() if gain == max_gain]
         chosen = rng.choice(best_genes)
@@ -121,6 +138,7 @@ def main():
         covered_pathways.update(pathway_matrix.columns[pathway_matrix.loc[chosen] == 1])
         remaining.remove(chosen)
 
+    # Pad with random eligible genes if the pathway saturation point was reached before hitting 50
     if len(pathway50_perts) < 50:
         extra_candidates = [g for g in eligible_genes if g not in pathway50_perts]
         extra = rng.choice(extra_candidates, size=50 - len(pathway50_perts), replace=False)
@@ -131,7 +149,7 @@ def main():
     final_splits = {}
     for strategy_name, perts_50 in all_strategies.items():
         np.random.seed(42)
-        # Random 40/10 split
+        # Create a strict 40-train and 10-test holdout split for every strategy
         test_genes_10 = np.random.choice(perts_50, size=10, replace=False).tolist()
         train_genes_40 = [p for p in perts_50 if p not in test_genes_10]
         
@@ -141,6 +159,7 @@ def main():
             "all_50": perts_50
         }
     
+    # Export splits for downstream model training and evaluation
     with open('../processed_data/task3_splits.pkl', 'wb') as f:
         pickle.dump(final_splits, f)
     print("Saved all multi-strategy splits to ../processed_data/task3_splits.pkl")

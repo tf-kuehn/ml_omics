@@ -25,7 +25,7 @@ def add_custom_errorbars(g, df, metric):
         if not title:
             continue
             
-        # Extract condition name from the facet title (e.g., 'Condition: Control' -> 'Control')
+        # Extract condition name from the facet title
         cond_name = title.split(': ')[-1]
         cond_df = df[df['Condition'] == cond_name]
         
@@ -42,7 +42,7 @@ def add_custom_errorbars(g, df, metric):
                     
                     x_pos = s_idx + offsets[m_idx]
                     
-                    # Draw the Fehlerbalken
+                    # Draw the Error bar
                     ax.errorbar(
                         x_pos, val, 
                         yerr=[[lower_err], [upper_err]], 
@@ -77,7 +77,6 @@ def main():
                     
                 y_true_cond = Y_test[cond_mask]
                 
-                # y_pred now contains predictions from n_bootstraps models
                 # Shape: (n_bootstraps, n_test_samples, n_genes)
                 n_bootstraps = y_pred.shape[0]
                 
@@ -166,14 +165,12 @@ def main():
         aspect=1.2,
     )
     
-    # Add custom error bars for MSE
-    add_custom_errorbars(g2, df_results, 'MSE')
-    
     g2.set_axis_labels('Selection Strategy', 'Mean Squared Error (MSE)')
     g2.set_titles(col_template='Condition: {col_name}')
     g2.set_xticklabels(rotation=45, ha='right')
     g2.fig.subplots_adjust(top=0.8)
     g2.fig.suptitle('Perturbation Prediction: MSE by Condition')
+    # Add custom error bars for MSE
     add_custom_errorbars(g2, df_results, 'MSE')
     plt.savefig("../results/task3_mse_strategies_plot.png", bbox_inches='tight')
     plt.show()
